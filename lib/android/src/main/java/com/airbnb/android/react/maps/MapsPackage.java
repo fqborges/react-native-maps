@@ -2,12 +2,19 @@ package com.airbnb.android.react.maps;
 
 import android.app.Activity;
 
+import com.airbnb.android.react.maps.osmdroid.OsmMapCalloutManager;
+import com.airbnb.android.react.maps.osmdroid.OsmMapManager;
+import com.airbnb.android.react.maps.osmdroid.OsmMapMarkerManager;
+import com.airbnb.android.react.maps.osmdroid.OsmMapPolygonManager;
+import com.airbnb.android.react.maps.osmdroid.OsmMapPolylineManager;
 import com.facebook.react.ReactPackage;
 import com.facebook.react.bridge.JavaScriptModule;
 import com.facebook.react.bridge.NativeModule;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.uimanager.ViewManager;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -42,7 +49,7 @@ public class MapsPackage implements ReactPackage {
     AirMapLocalTileManager localTileManager = new AirMapLocalTileManager(reactContext);
     AirMapOverlayManager overlayManager = new AirMapOverlayManager(reactContext);
 
-    return Arrays.<ViewManager>asList(
+    List<ViewManager> airMapManagers = Arrays.<ViewManager>asList(
         calloutManager,
         annotationManager,
         polylineManager,
@@ -54,5 +61,35 @@ public class MapsPackage implements ReactPackage {
         localTileManager,
         overlayManager
     );
+
+    if (hasOsmdroidOnClasspath()) {
+      OsmMapCalloutManager osmCalloutManager = new OsmMapCalloutManager();
+      OsmMapMarkerManager osmMarkerManager = new OsmMapMarkerManager();
+      OsmMapPolylineManager osmPolylineManager = new OsmMapPolylineManager(reactContext);
+      OsmMapPolygonManager osmPolygonManager = new OsmMapPolygonManager(reactContext);
+      OsmMapManager osmMapManager = new OsmMapManager(reactContext);
+
+      List<ViewManager> managers = new ArrayList<>(airMapManagers);
+      managers.addAll(Arrays.<ViewManager>asList(
+          osmCalloutManager,
+          osmMarkerManager,
+          osmPolylineManager,
+          osmPolygonManager,
+          osmMapManager
+      ));
+      return managers;
+    }
+
+    return airMapManagers;
+  }
+
+  private boolean hasOsmdroidOnClasspath() {
+    try {
+      Class.forName("org.osmdroid.views.MapView");
+      return true;
+    } catch (ClassNotFoundException ex) {
+      ex.printStackTrace();
+    }
+    return false;
   }
 }
