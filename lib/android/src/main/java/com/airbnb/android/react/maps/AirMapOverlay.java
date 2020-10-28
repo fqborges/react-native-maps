@@ -35,8 +35,8 @@ public class AirMapOverlay extends AirMapFeature implements ImageReadable {
   }
 
   public void setBounds(ReadableArray bounds) {
-    LatLng sw = new LatLng(bounds.getArray(1).getDouble(0), bounds.getArray(0).getDouble(1));
-    LatLng ne = new LatLng(bounds.getArray(0).getDouble(0), bounds.getArray(1).getDouble(1));
+    LatLng sw = new LatLng(bounds.getArray(0).getDouble(0), bounds.getArray(0).getDouble(1));
+    LatLng ne = new LatLng(bounds.getArray(1).getDouble(0), bounds.getArray(1).getDouble(1));
     this.bounds = new LatLngBounds(sw, ne);
     if (this.groundOverlay != null) {
       this.groundOverlay.setPositionFromBounds(this.bounds);
@@ -50,12 +50,12 @@ public class AirMapOverlay extends AirMapFeature implements ImageReadable {
     }
   }
 
-  // public void setTransparency(float transparency) {
-  //     this.transparency = transparency;
-  //     if (groundOverlay != null) {
-  //         groundOverlay.setTransparency(transparency);
-  //     }
-  // }
+  public void setTransparency(float transparency) {
+      this.transparency = transparency;
+      if (groundOverlay != null) {
+          groundOverlay.setTransparency(transparency);
+      }
+  }
 
   public void setImage(String uri) {
     this.mImageReader.setImage(uri);
@@ -138,6 +138,7 @@ public class AirMapOverlay extends AirMapFeature implements ImageReadable {
     if (this.groundOverlay != null) {
       this.groundOverlay.setVisible(true);
       this.groundOverlay.setImage(this.iconBitmapDescriptor);
+      this.groundOverlay.setTransparency(this.transparency);
       this.groundOverlay.setClickable(this.tappable);
     }
   }

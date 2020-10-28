@@ -48,7 +48,7 @@ RCT_EXPORT_MODULE()
   AIRGoogleMap *map = [AIRGoogleMap new];
   map.bridge = self.bridge;
   map.delegate = self;
-  map.isAccessibilityElement = YES;
+  map.isAccessibilityElement = NO;
   map.accessibilityElementsHidden = NO;
   map.settings.consumesGesturesInView = NO;
   map.indoorDisplay.delegate = self;
@@ -65,6 +65,7 @@ RCT_EXPORT_MODULE()
   return map;
 }
 
+RCT_EXPORT_VIEW_PROPERTY(isAccessibilityElement, BOOL)
 RCT_REMAP_VIEW_PROPERTY(testID, accessibilityIdentifier, NSString)
 RCT_EXPORT_VIEW_PROPERTY(initialCamera, GMSCameraPosition)
 RCT_REMAP_VIEW_PROPERTY(camera, cameraProp, GMSCameraPosition)
@@ -571,6 +572,10 @@ RCT_EXPORT_METHOD(setIndoorActiveLevelIndex:(nonnull NSNumber *)reactTag
   return @{ @"legalNotice": [GMSServices openSourceLicenseInfo] };
 }
 
+- (void)mapView:(GMSMapView *)mapView willMove:(BOOL)gesture{
+    self.isGesture = gesture;
+}
+
 - (void)mapViewDidStartTileRendering:(GMSMapView *)mapView {
   AIRGoogleMap *googleMapView = (AIRGoogleMap *)mapView;
   [googleMapView didPrepareMap];
@@ -603,12 +608,12 @@ RCT_EXPORT_METHOD(setIndoorActiveLevelIndex:(nonnull NSNumber *)reactTag
 
 - (void)mapView:(GMSMapView *)mapView didChangeCameraPosition:(GMSCameraPosition *)position {
   AIRGoogleMap *googleMapView = (AIRGoogleMap *)mapView;
-  [googleMapView didChangeCameraPosition:position];
+  [googleMapView didChangeCameraPosition:position isGesture:self.isGesture];
 }
 
 - (void)mapView:(GMSMapView *)mapView idleAtCameraPosition:(GMSCameraPosition *)position {
   AIRGoogleMap *googleMapView = (AIRGoogleMap *)mapView;
-  [googleMapView idleAtCameraPosition:position];
+  [googleMapView idleAtCameraPosition:position isGesture:self.isGesture];
 }
 
 - (UIView *)mapView:(GMSMapView *)mapView markerInfoWindow:(GMSMarker *)marker {

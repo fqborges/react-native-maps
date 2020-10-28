@@ -17,14 +17,16 @@ android {
 }
 
 dependencies {
+  def supportLibVersion = safeExtGet('supportLibVersion', '28.0.0')
   def supportLibMajorVersion = supportLibVersion.split('\\.')[0] as int
   def appCompatLibName =  (supportLibMajorVersion < 20) ? "androidx.appcompat:appcompat" : "com.android.support:appcompat-v7"
   implementation "$appCompatLibName:$supportLibVersion"
   implementation('com.facebook.react:react-native:+') {
     exclude group: 'com.android.support'
   }
-  compileOnly "com.google.android.gms:play-services-base:${safeExtGet('playServicesVersion', '16.1.0')}"
-  compileOnly "com.google.android.gms:play-services-maps:${safeExtGet('playServicesVersion', '16.1.0')}"
+  compileOnly "com.google.android.gms:play-services-base:${safeExtGet('playServicesVersion', '17.0.0')}"
+  compileOnly "com.google.android.gms:play-services-maps:${safeExtGet('playServicesVersion', '17.0.0')}"
+  compileOnly "com.google.android.gms:play-services-location:17.0.0"
   compileOnly 'com.google.maps.android:android-maps-utils:0.5'
   implementation "org.osmdroid:osmdroid-android:6.0.3"
 }

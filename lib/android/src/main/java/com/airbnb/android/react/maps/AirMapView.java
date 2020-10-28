@@ -1,7 +1,6 @@
 package com.airbnb.android.react.maps;
 
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -9,6 +8,8 @@ import android.graphics.Point;
 import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.os.Build;
+
+import androidx.core.content.PermissionChecker;
 import androidx.core.view.GestureDetectorCompat;
 import androidx.core.view.MotionEventCompat;
 import android.view.GestureDetector;
@@ -112,6 +113,7 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
   private boolean destroyed = false;
   private final ThemedReactContext context;
   private final EventDispatcher eventDispatcher;
+  private FusedLocationSource fusedLocationSource;
 
   private ViewAttacherGroup attacherGroup;
 
@@ -122,10 +124,10 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
   }
 
   // We do this to fix this bug:
-  // https://github.com/react-native-community/react-native-maps/issues/271
+  // https://github.com/react-native-maps/react-native-maps/issues/271
   //
   // which conflicts with another bug regarding the passed in context:
-  // https://github.com/react-native-community/react-native-maps/issues/1147
+  // https://github.com/react-native-maps/react-native-maps/issues/1147
   //
   // Doing this allows us to avoid both bugs.
   private static Context getNonBuggyContext(ThemedReactContext reactContext,
@@ -160,6 +162,8 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
     super.getMapAsync(this);
 
     final AirMapView view = this;
+
+    fusedLocationSource = new FusedLocationSource(context);
 
     gestureDetector =
         new GestureDetectorCompat(reactContext, new GestureDetector.SimpleOnGestureListener() {
@@ -346,8 +350,12 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
       @Override
       public void onCameraMove() {
         LatLngBounds bounds = map.getProjection().getVisibleRegion().latLngBounds;
+
         cameraLastIdleBounds = null;
-        eventDispatcher.dispatchEvent(new RegionChangeEvent(getId(), bounds, true));
+        boolean isGesture = GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE == cameraMoveReason;
+
+        RegionChangeEvent event = new RegionChangeEvent(getId(), bounds, true, isGesture);
+        eventDispatcher.dispatchEvent(event);
       }
     });
 
@@ -358,8 +366,12 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
         if ((cameraMoveReason != 0) &&
           ((cameraLastIdleBounds == null) ||
             LatLngBoundsUtils.BoundsAreDifferent(bounds, cameraLastIdleBounds))) {
+
           cameraLastIdleBounds = bounds;
-          eventDispatcher.dispatchEvent(new RegionChangeEvent(getId(), bounds, false));
+          boolean isGesture = GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE == cameraMoveReason;
+
+          RegionChangeEvent event = new RegionChangeEvent(getId(), bounds, false, isGesture);
+          eventDispatcher.dispatchEvent(event);
         }
       }
     });
@@ -385,6 +397,7 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
         if (hasPermissions()) {
           //noinspection MissingPermission
           map.setMyLocationEnabled(showUserLocation);
+          map.setLocationSource(fusedLocationSource);
         }
         synchronized (AirMapView.this) {
           if (!destroyed) {
@@ -418,8 +431,8 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
   }
 
   private boolean hasPermissions() {
-    return checkSelfPermission(getContext(), PERMISSIONS[0]) == PackageManager.PERMISSION_GRANTED ||
-        checkSelfPermission(getContext(), PERMISSIONS[1]) == PackageManager.PERMISSION_GRANTED;
+    return checkSelfPermission(getContext(), PERMISSIONS[0]) == PermissionChecker.PERMISSION_GRANTED ||
+        checkSelfPermission(getContext(), PERMISSIONS[1]) == PermissionChecker.PERMISSION_GRANTED;
   }
 
 
@@ -513,9 +526,22 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
   public void setShowsUserLocation(boolean showUserLocation) {
     this.showUserLocation = showUserLocation; // hold onto this for lifecycle handling
     if (hasPermissions()) {
+      map.setLocationSource(fusedLocationSource);
       //noinspection MissingPermission
       map.setMyLocationEnabled(showUserLocation);
     }
+  }
+
+  public void setUserLocationPriority(int priority){
+    fusedLocationSource.setPriority(priority);
+  }
+
+  public void setUserLocationUpdateInterval(int interval){
+    fusedLocationSource.setInterval(interval);
+  }
+
+  public void setUserLocationFastestInterval(int interval){
+    fusedLocationSource.setFastestInterval(interval);
   }
 
   public void setShowsMyLocationButton(boolean showMyLocationButton) {
@@ -720,7 +746,7 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
       int width = data.get("width") == null ? 0 : data.get("width").intValue();
       int height = data.get("height") == null ? 0 : data.get("height").intValue();
 
-      //fix for https://github.com/react-native-community/react-native-maps/issues/245,
+      //fix for https://github.com/react-native-maps/react-native-maps/issues/245,
       //it's not guaranteed the passed-in height and width would be greater than 0.
       if (width <= 0 || height <= 0) {
         map.moveCamera(CameraUpdateFactory.newLatLngBounds(boundsToMove, 0));
@@ -855,12 +881,12 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
     if (addedPosition) {
       LatLngBounds bounds = builder.build();
       CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, baseMapPadding);
-      
+
       if (edgePadding != null) {
         map.setPadding(edgePadding.getInt("left"), edgePadding.getInt("top"),
           edgePadding.getInt("right"), edgePadding.getInt("bottom"));
-      }   
-      
+      }
+
       if (animated) {
         map.animateCamera(cu);
       } else {
@@ -1229,13 +1255,13 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
       indoorBuilding.putArray("levels", levelsArray);
       indoorBuilding.putInt("activeLevelIndex", 0);
       indoorBuilding.putBoolean("underground", false);
-      
+
       event.putMap("IndoorBuilding", indoorBuilding);
 
       manager.pushEvent(context, this, "onIndoorBuildingFocused", event);
     }
   }
-  
+
   @Override
   public void onIndoorLevelActivated(IndoorBuilding building) {
     if (building == null) {
@@ -1258,7 +1284,7 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
 
     manager.pushEvent(context, this, "onIndoorLevelActivated", event);
   }
-    
+
   public void setIndoorActiveLevelIndex(int activeLevelIndex) {
     IndoorBuilding building = this.map.getFocusedBuilding();
     if (building != null) {

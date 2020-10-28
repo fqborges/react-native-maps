@@ -164,6 +164,21 @@ declare module "react-native-maps-osmdroid" {
     position: Point;
   };
 
+  export type IndoorBuilding = {
+    underground: boolean,
+    activeLevelIndex: number,
+    levels: Array<IndoorLevel>,
+  }
+
+  export type IndoorLevel = {
+    index: number,
+    name: string,
+    shortName: string,
+  }
+
+  export interface IndoorBuildingEvent
+    extends NativeSyntheticEvent<{IndoorBuilding:IndoorBuilding}> {}
+
   /**
    * onKmlReady parameter
    */
@@ -182,6 +197,9 @@ declare module "react-native-maps-osmdroid" {
     provider?: "google" | "osmdroid" | null;
     customMapStyle?: MapStyleElement[];
     customMapStyleString?: string;
+    userLocationPriority?: "balanced" | "high" | "low" | "passive";
+    userLocationUpdateInterval?: number;
+    userLocationFastestInterval?: number;
     showsUserLocation?: boolean;
     userLocationAnnotationTitle?: string;
     showsMyLocationButton?: boolean;
@@ -212,10 +230,12 @@ declare module "react-native-maps-osmdroid" {
     initialCamera?: Camera;
     liteMode?: boolean;
     mapPadding?: EdgePadding;
+    paddingAdjustmentBehavior?: "always" | "automatic" | "never";
     maxDelta?: number;
     minDelta?: number;
     legalLabelInsets?: EdgeInsets;
     compassOffset?: { x: number; y: number };
+    tintColor?: string;
 
     onMapReady?: () => void;
     onKmlReady?: (values: KmlMapEvent) => void;
@@ -240,6 +260,7 @@ declare module "react-native-maps-osmdroid" {
     onMarkerDragStart?: (event: MapEvent) => void;
     onMarkerDrag?: (event: MapEvent) => void;
     onMarkerDragEnd?: (event: MapEvent) => void;
+    onIndoorBuildingFocused?: (event: IndoorBuildingEvent) => void;
 
     minZoomLevel?: number;
     maxZoomLevel?: number;
@@ -274,6 +295,7 @@ declare module "react-native-maps-osmdroid" {
     takeSnapshot(options?: SnapshotOptions): Promise<string>;
     pointForCoordinate(coordinate: LatLng): Promise<Point>;
     coordinateForPoint(point: Point): Promise<LatLng>;
+    setIndoorActiveLevelIndex(index:number): void;
   }
 
   export class MapViewAnimated extends MapView {}
@@ -331,6 +353,11 @@ declare module "react-native-maps-osmdroid" {
      * __iOS only__
      */
     redrawCallout(): void;
+    /**
+     * Causes a redraw of the marker. Useful when there are updates to the
+     * marker and `tracksViewChanges` comes with a cost that is too high.
+     */
+    redraw(): void
     /**
      * Animates marker movement.
      * __Android only__
@@ -437,9 +464,12 @@ declare module "react-native-maps-osmdroid" {
 
   export interface MapUrlTileProps extends ViewProperties {
     urlTemplate: string;
+    minimumZ?: number;
     maximumZ?: number;
     zIndex?: number;
     tileSize?: number;
+    shouldReplaceMapContent?:boolean;
+    flipY?: boolean;
   }
 
   export class UrlTile extends React.Component<MapUrlTileProps, any> {}
@@ -506,6 +536,26 @@ declare module "react-native-maps-osmdroid" {
   }
 
   export class Heatmap extends React.Component<MapHeatmapProps, any> {}
+
+  // =======================================================================
+  //  Geojson
+  // =======================================================================
+
+  import GeoJSON from 'geojson';
+
+  export interface GeojsonProps {
+    geojson: GeoJSON.GeoJSON;
+    strokeColor?: string;
+    fillColor?: string;
+    strokeWidth?: number;
+    lineDashPhase?: number;
+    lineDashPattern?:number[];
+    lineCap?:'butt'|'round' | 'square';
+    lineJoin?: 'miter'| 'round' | 'bevel';
+    miterLimit?: number;
+  }
+
+  export class Geojson extends React.Component<GeojsonProps, any> {}
 
   // =======================================================================
   //  Constants

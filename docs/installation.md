@@ -4,6 +4,11 @@ Install the library from npm:
 
 ```sh
 npm install react-native-maps --save-exact
+```
+
+or 
+
+```sh
 yarn add react-native-maps -E
 ```
 
@@ -100,9 +105,6 @@ post_install do |installer|
         config.build_settings['CLANG_ENABLE_MODULES'] = 'No'
       end
     end
-    if target.name == "React"
-      target.remove_from_project
-    end
   end
 end
 ```
@@ -121,6 +123,9 @@ and open the produced workspace file (`.xcworkspace`) in XCode to build your pro
 cd ios
 pod install
 ```
+### App store submission
+
+The app's `Info.plist` file must contain a `NSLocationWhenInUseUsageDescription` with a user-facing purpose string explaining clearly and completely why your app needs the location, otherwise Apple will reject your app submission.
 
 ### Enabling Google Maps on iOS (React Native all versions)
 
@@ -220,7 +225,7 @@ ext {
     buildToolsVersion   = "xxx"
     minSdkVersion       = xxx
     supportLibVersion   = "xxx"
-    playServicesVersion = "xxx" // or set latest version
+    playServicesVersion = "17.0.0" // or find latest version
     androidMapsUtilsVersion = "xxx"
 }
 ```
@@ -233,16 +238,19 @@ buildscript {
         compileSdkVersion = xxx
         targetSdkVersion = xxx
         supportLibVersion = "xxx"
-        playServicesVersion = "xxx" // or set latest version
+        playServicesVersion = "17.0.0" // or find latest version
         androidMapsUtilsVersion = "xxx"
     }
 }
 ...
 ```
+You can find the latest `playServicesVersion` by checking [https://developers.google.com/android/guides/releases](https://developers.google.com/android/guides/releases) and searching for `gms:play-services-maps:`
+
+You can find the latest `androidMapsUtilsVersion` by checking [https://mvnrepository.com/artifact/com.google.maps.android/android-maps-utils](https://mvnrepository.com/artifact/com.google.maps.android/android-maps-utils)
 
 3.2 (React Native all versions) If you do **not** have *project-wide properties* defined and have a
 different play-services version than the one included in this library,
-use the following instead (switch 10.0.1 for the desired version):
+use the following instead (switch 17.0.0 and/or 17.2.1 for the desired versions):
 
 ```groovy
 ...
@@ -252,8 +260,8 @@ dependencies {
        exclude group: 'com.google.android.gms', module: 'play-services-base'
        exclude group: 'com.google.android.gms', module: 'play-services-maps'
    }
-   implementation 'com.google.android.gms:play-services-base:10.0.1'
-   implementation 'com.google.android.gms:play-services-maps:10.0.1'
+   implementation 'com.google.android.gms:play-services-base:17.2.1'
+   implementation 'com.google.android.gms:play-services-maps:17.0.0'
 }
 ```
 
@@ -267,6 +275,9 @@ dependencies {
    <meta-data
      android:name="com.google.android.geo.API_KEY"
      android:value="Your Google maps API Key Here"/>
+  
+   <!-- You will also only need to add this uses-library tag -->
+   <uses-library android:name="org.apache.http.legacy" android:required="false"/>
 </application>
 ```
 > Note: As shown above, `com.google.android.geo.API_KEY` is the
@@ -322,7 +333,16 @@ project from the URLs below:
 - [Google Maps SDK Android](https://console.developers.google.com/apis/library/maps-android-backend.googleapis.com/)
 - [Google Maps SDK iOS (if required)](https://console.developers.google.com/apis/library/maps-ios-backend.googleapis.com)
 
-For reference, you may read the relevant issue reports: ([#118](https://github.com/react-native-community/react-native-maps/issues/118), [#176](https://github.com/react-native-community/react-native-maps/issues/176), [#684](https://github.com/react-native-community/react-native-maps/issues/684)).
+For reference, you may read the relevant issue reports: ([#118](https://github.com/react-native-maps/react-native-maps/issues/118), [#176](https://github.com/react-native-maps/react-native-maps/issues/176), [#684](https://github.com/react-native-maps/react-native-maps/issues/684)).
+
+### The map background is gray (Google Maps)
+
+If you get grey screen on android device create google_maps_api.xml in android/app/src/main/res/values.
+```xml
+<resources>
+  <string name="google_maps_key" templateMergeStrategy="preserve" translatable="false">(api key here)</string>
+</resources>
+```
 
 ### No map whatsoever
 
@@ -470,7 +490,7 @@ import com.airbnb.android.react.maps.MapsPackage;
 
 ### Trouble with Google Play services
 
-- Make sure that your emulator has Google Play (Go to Anroid studio -> Virtual Devices -> Check that you have icon in "Play Store" column)
+- Make sure that your emulator has Google Play (Go to Android studio -> Virtual Devices -> Check that you have icon in "Play Store" column)
 - Click to bottom dots icon in the emulator
 - Go to Google Play Tab and click Update
 
